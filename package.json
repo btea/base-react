@@ -1,0 +1,30 @@
+{
+    "name": "react-base",
+    "version": "0.0.1",
+    "description": "react create",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "prepare": "husky install"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/btea/react.git"
+    },
+    "author": "btea",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/btea/react/issues"
+    },
+    "homepage": "https://github.com/btea/react#readme",
+    "devDependencies": {
+        "@commitlint/cli": "^13.1.0",
+        "@commitlint/config-conventional": "^13.1.0",
+        "husky": "^7.0.1"
+    },
+    "husky": {
+        "hooks": {
+            "commit-msg": "commitlint -e $HUSKY_GIT_PARAMS"
+        }
+    }
+}
