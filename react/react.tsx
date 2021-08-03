@@ -83,7 +83,7 @@ const React = {
 
 const ReactDOM = {
 	render: (vnode: Eleme, container: HTMLElement) => {
-		// container.innerHTML = '';
+		container.innerHTML = '';
 		return render(vnode, container);
 	},
 };
