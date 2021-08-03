@@ -9,6 +9,10 @@ interface Eleme {
 	};
 }
 
+interface fiber {
+	dom: HTMLElement;
+}
+
 function createElement(tag: string, attrs: Attrs[], ...children: Eleme[]): Eleme {
 	return {
 		type: tag,
@@ -31,67 +35,87 @@ function createTextElement(text: string): Eleme {
 	};
 }
 
-function setAttribute(dom: HTMLElement, name: string, value: unknown): void {
-	// 如果属性名是className，则改回class
-	if (name === 'className') name = 'class';
+function render(vnode: Eleme, container: HTMLElement | Text): HTMLElement | Text | void {
+	wipRoot = {
+		dom: container,
+		props: [vnode],
+	};
+	nextUnitOfWork = wipRoot;
+}
 
-	// 如果属性名是onXXX，则是一个事件监听方法
-	if (/on\w+/.test(name)) {
-		name = name.toLowerCase();
-		const eve = value as (e: Event) => void;
-		const e_name = name.slice(2) as keyof HTMLElementEventMap;
-		dom.addEventListener(e_name, eve);
-		// 如果属性名是style，则更新style对象
-	} else if (name === 'style') {
-		if (!value || typeof value === 'string') {
-			Object.assign(dom.style, {
-				cssText: value || '',
-			});
-		} else if (value && typeof value === 'object') {
-			for (let name in value) {
-				// 可以通过style={ width: 20 }这种形式来设置样式，可以省略掉单位px
-				Object.defineProperty(dom.style, name, Object.getOwnPropertyDescriptor(value, name) || {});
-			}
-		}
-		// 普通属性则直接更新属性
-	} else {
-		if (name !== 'class' && name in dom) {
-			Object.defineProperty(dom, name, {
-				value: value || '',
-				configurable: true,
-			});
-		}
-		if (value) {
-			const _v = String(value) as string;
-			dom.setAttribute(name, _v);
+function createDom(fiber) {
+	const dom = fiber.type === 'TEXT_ELEMENT' ? document.createTextNode('') : document.createElement(fiber.type);
+	const isProperty = (key: string) => key !== 'children';
+	Object.keys(fiber)
+		.filter(isProperty)
+		.map(name => {
+			dom[name] = fiber.props[name];
+		});
+	return dom;
+}
+
+let nextUnitOfWork = null;
+let wipRoot = null;
+function workLoop(deadline) {
+	let shouldYield = false;
+	while (nextUnitOfWork && !shouldYield) {
+		nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
+		shouldYield = deadline.timeRemaining() < 1;
+	}
+	requestIdleCallback(workLoop);
+}
+
+requestIdleCallback(workLoop);
+
+function performUnitOfWork(fiber) {
+	if (!fiber.dom) {
+		fiber.dom = createDom(fiber);
+	}
+
+	const elements = fiber.props.children;
+	let index = 0;
+	let prevSibling = null;
+	while (index < elements.length) {
+		const element = elements[index];
+		const newFiber = {
+			type: element.type,
+			props: element.props,
+			parent: fiber,
+			dom: null,
+		};
+		if (index === 0) {
+			fiber.child = newFiber;
 		} else {
-			dom.removeAttribute(name);
+			prevSibling.sibling = newFiber;
 		}
+		prevSibling = newFiber;
+		index++;
+	}
+	if (fiber.child) {
+		return fiber.child;
+	}
+	let nextFiber = fiber;
+	while (nextFiber) {
+		if (nextFiber.sibling) {
+			return nextFiber.sibling;
+		}
+		nextFiber = nextFiber.parent;
 	}
 }
 
-function render(vnode: Eleme, container: HTMLElement | Text): HTMLElement | Text | void {
-	const text = (vnode.props.nodeValue as string) || '';
-	const dom = vnode.type === 'TEXT_ELEMENT' ? document.createTextNode(text) : document.createElement(vnode.type);
+function commitRoot() {
+	commitWork(wipRoot.child);
+	wipRoot = null;
+}
 
-	const isProperty = (key: string) => key !== 'children';
-	Object.keys(vnode.props)
-		.filter(isProperty)
-		.forEach(name => {
-			let _v = vnode.props[name];
-			if (typeof _v === 'object') {
-				_v = Object.keys(_v)
-					.map(k => {
-						return `${k}: ${_v[k]}`;
-					})
-					.join(';');
-			}
-			dom[name] = _v;
-		});
-	vnode.props.children.forEach(child => {
-		render(child, dom);
-	});
-	container.appendChild(dom);
+function commitWork(fiber) {
+	if (!fiber) {
+		return;
+	}
+	const domParent = fiber.parent.dom;
+	domParent.appendChild(fiber.dom);
+	commitWork(fiber.child);
+	commitWork(fiber.sibling);
 }
 
 const React = {
