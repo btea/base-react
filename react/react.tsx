@@ -2,16 +2,32 @@ interface Attrs {
 	[key: string]: unknown;
 }
 interface Eleme {
-	tag: string;
-	attrs: Attrs[];
-	children: Eleme[];
+	type: string;
+	props: {
+		children: Eleme[];
+		[key: string]: unknown;
+	};
 }
 
 function createElement(tag: string, attrs: Attrs[], ...children: Eleme[]): Eleme {
 	return {
-		tag,
-		attrs,
-		children,
+		type: tag,
+		props: {
+			...attrs,
+			children: children.map(child => {
+				return typeof child === 'object' ? child : createTextElement(child);
+			}),
+		},
+	};
+}
+
+function createTextElement(text: string): Eleme {
+	return {
+		type: 'TEXT_ELEMENT',
+		props: {
+			nodeValue: text,
+			children: [],
+		},
 	};
 }
 
@@ -54,27 +70,28 @@ function setAttribute(dom: HTMLElement, name: string, value: unknown): void {
 	}
 }
 
-function render(vnode: Eleme, container: HTMLElement): HTMLElement | Text | void {
-	// 当vnode为字符串时，渲染结果是一段文本
-	if (typeof vnode === 'string') {
-		const textNode = document.createTextNode(vnode);
-		return container.appendChild(textNode);
-	}
+function render(vnode: Eleme, container: HTMLElement | Text): HTMLElement | Text | void {
+	const text = (vnode.props.nodeValue as string) || '';
+	const dom = vnode.type === 'TEXT_ELEMENT' ? document.createTextNode(text) : document.createElement(vnode.type);
 
-	const dom = document.createElement(vnode.tag);
-
-	if (vnode.attrs) {
-		const list: string[] = Object.keys(vnode.attrs);
-		list.forEach(key => {
-			const des = Object.getOwnPropertyDescriptor(vnode.attrs, key);
-			const value = des?.value;
-			setAttribute(dom, key, value); // 设置属性
+	const isProperty = (key: string) => key !== 'children';
+	Object.keys(vnode.props)
+		.filter(isProperty)
+		.forEach(name => {
+			let _v = vnode.props[name];
+			if (typeof _v === 'object') {
+				_v = Object.keys(_v)
+					.map(k => {
+						return `${k}: ${_v[k]}`;
+					})
+					.join(';');
+			}
+			dom[name] = _v;
 		});
-	}
-
-	vnode.children.forEach(child => render(child, dom)); // 递归渲染子节点
-
-	return container.appendChild(dom); // 将渲染结果挂载到真正的DOM上
+	vnode.props.children.forEach(child => {
+		render(child, dom);
+	});
+	container.appendChild(dom);
 }
 
 const React = {
@@ -89,17 +106,17 @@ const ReactDOM = {
 };
 
 const tick = () => {
-	const changeText = () => {
-		console.log('%cchangeText', 'color: #6cf');
-	};
 	const element = (
 		<div>
-			<h1 onClick={changeText}>Hello, world!</h1>
-			<h2>It is {new Date().toLocaleTimeString()}.</h2>
+			<div style='background: aqua;'>
+				<h1>Hello World</h1>
+			</div>
+			<div style={{ color: '#6cf' }}>道心惟微</div>
 		</div>
 	);
 	const el = document.getElementById('app')!;
 	ReactDOM.render(element as unknown as Eleme, el);
 };
+tick();
 
-setInterval(tick, 1000);
+// setInterval(tick, 1000);
