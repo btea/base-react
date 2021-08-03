@@ -54,7 +54,7 @@ function setAttribute(dom: HTMLElement, name: string, value: unknown): void {
 	}
 }
 
-function render(vnode: Eleme, container: HTMLElement): HTMLElement | Text {
+function render(vnode: Eleme, container: HTMLElement): HTMLElement | Text | void {
 	// 当vnode为字符串时，渲染结果是一段文本
 	if (typeof vnode === 'string') {
 		const textNode = document.createTextNode(vnode);
@@ -83,15 +83,18 @@ const React = {
 
 const ReactDOM = {
 	render: (vnode: Eleme, container: HTMLElement) => {
-		container.innerHTML = '';
+		// container.innerHTML = '';
 		return render(vnode, container);
 	},
 };
 
 const tick = () => {
+	const changeText = () => {
+		console.log('%cchangeText', 'color: #6cf');
+	};
 	const element = (
 		<div>
-			<h1>Hello, world!</h1>
+			<h1 onClick={changeText}>Hello, world!</h1>
 			<h2>It is {new Date().toLocaleTimeString()}.</h2>
 		</div>
 	);
