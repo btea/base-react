@@ -2,8 +2,11 @@ import React from '../packages/react';
 import ReactDom from '../packages/react-dom';
 
 const App = () => {
+	const showLog = () => {
+		console.log('click');
+	};
 	return (
-		<div onClick={() => {}}>
+		<div onClick={showLog}>
 			<span></span>
 			<span></span>
 			<span></span>

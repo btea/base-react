@@ -3,7 +3,11 @@ import { Key } from '../shared/ReactTypes';
 
 class ReactElement<P = any, T = any> {
 	$$typeof: symbol = REACT_ELEMENT_TYPE;
-	constructor(public type: T, public key: Key | null = null, public props: P) {}
+	constructor(public type: T, public key: Key | null = null, public props: P) {
+		this.type = type;
+		this.key = key;
+		this.props = props;
+	}
 }
 
 const RESERVED_PROPS = {
