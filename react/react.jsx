@@ -290,3 +290,4 @@ function Counter() {
 }
 const element = <Counter />;
 React.render(element, container);
+console.log('test');
