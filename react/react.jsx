@@ -295,6 +295,13 @@ function Counter() {
 	useEffect(() => {
 		console.log(2);
 	});
+	/**
+	 * 重复创建多个元素
+	 * new Array(1000).map((k, i) => {
+	 * 	return i + '--' + Math.random().toString().slice(2, 8)
+	 * })
+	 * 得到的是一个包含1000个空元素的数组
+	 */
 	const item_list = Array.from('a'.repeat(1000), (k, i) => {
 		return i + '--' + Math.random().toString().slice(2, 8);
 	});
