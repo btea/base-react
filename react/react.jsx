@@ -34,41 +34,45 @@ const isNew = (prev, next) => key => {
 const isGone = (prev, next) => key => !(key in next);
 function updateDom(dom, prevProps, nextProps) {
 	// 移除旧的事件
-	Object.keys(prevProps)
-		.filter(isEvent)
-		.filter(key => !(key in nextProps) && isNew(prevProps, nextProps)(key))
-		.forEach(name => {
-			const eventType = name.toLowerCase().substring(2);
-			dom.removeEventListener(eventType, prevProps[name]);
-		});
+	prevProps &&
+		Object.keys(prevProps)
+			.filter(isEvent)
+			.filter(key => !(key in nextProps) && isNew(prevProps, nextProps)(key))
+			.forEach(name => {
+				const eventType = name.toLowerCase().substring(2);
+				dom.removeEventListener(eventType, prevProps[name]);
+			});
 	// 移除旧属性
-	Object.keys(prevProps)
-		.filter(isProperty)
-		.filter(isGone(prevProps, nextProps))
-		.forEach(name => {
-			dom[name] = '';
-		});
+	prevProps &&
+		Object.keys(prevProps)
+			.filter(isProperty)
+			.filter(isGone(prevProps, nextProps))
+			.forEach(name => {
+				dom[name] = '';
+			});
 	// 设置或修改新属性
-	Object.keys(nextProps)
-		.filter(isProperty)
-		.filter(isNew(prevProps, nextProps))
-		.forEach(name => {
-			let val = nextProps[name];
-			if (typeof val === 'object') {
-				val = Object.keys(val)
-					.map(key => `${key}:${val[key]}`)
-					.join(';');
-			}
-			dom[name] = val;
-		});
+	nextProps &&
+		Object.keys(nextProps)
+			.filter(isProperty)
+			.filter(isNew(prevProps, nextProps))
+			.forEach(name => {
+				let val = nextProps[name];
+				if (typeof val === 'object') {
+					val = Object.keys(val)
+						.map(key => `${key}:${val[key]}`)
+						.join(';');
+				}
+				dom[name] = val;
+			});
 	// 添加事件
-	Object.keys(nextProps)
-		.filter(isEvent)
-		.filter(isNew(prevProps, nextProps))
-		.forEach(name => {
-			const eventType = name.toLowerCase().substring(2);
-			dom.addEventListener(eventType, nextProps[name]);
-		});
+	nextProps &&
+		Object.keys(nextProps)
+			.filter(isEvent)
+			.filter(isNew(prevProps, nextProps))
+			.forEach(name => {
+				const eventType = name.toLowerCase().substring(2);
+				dom.addEventListener(eventType, nextProps[name]);
+			});
 }
 
 function commitRoot() {
@@ -95,7 +99,7 @@ function commitWork(fiber) {
 		// domParent.removeChild(fiber.dom);
 		commitDeletion(fiber, domParent);
 	}
-	commitWork(fiber.child);
+	commitWork(fiber.child); // 深度优先遍历
 	commitWork(fiber.sibling);
 }
 
@@ -140,6 +144,8 @@ requestIdleCallback(workLoop);
 
 function performUnitOfWork(fiber) {
 	const isFunctionComponent = fiber.type instanceof Function;
+	// console.log('======fiber======');
+	// console.log(fiber);
 	if (isFunctionComponent) {
 		updateFunctionComponent(fiber);
 	} else {
@@ -204,7 +210,11 @@ function updateHostComponent(fiber) {
 	if (!fiber.dom) {
 		fiber.dom = createDom(fiber);
 	}
-	reconcileChildren(fiber, fiber.props.children);
+	if (fiber.props) {
+		reconcileChildren(fiber, fiber.props.children);
+	} else {
+		reconcileChildren(fiber, []);
+	}
 }
 
 function reconcileChildren(wipFiber, elements) {
@@ -212,6 +222,9 @@ function reconcileChildren(wipFiber, elements) {
 	let oldFiber = wipFiber.alternate && wipFiber.alternate.child;
 
 	let prevSibling = null;
+	if (elements && Array.isArray(elements[0])) {
+		elements = [...elements[0]];
+	}
 	while (index < elements.length || oldFiber != null) {
 		const element = elements[index];
 		let newFiber = null;
@@ -282,12 +295,20 @@ function Counter() {
 	useEffect(() => {
 		console.log(2);
 	});
+	const item_list = Array.from('a'.repeat(1000), (k, i) => {
+		return i + '--' + Math.random().toString().slice(2, 8);
+	});
 	return (
 		<h1 onClick={() => setState(state + 1)} style={{ color: '#6cf' }}>
 			Count: {state}
+			<div>======</div>
+			<div className='item-list'>
+				{item_list.map((k, v) => {
+					return <div key={k}>{k}</div>;
+				})}
+			</div>
 		</h1>
 	);
 }
 const element = <Counter />;
 React.render(element, container);
-console.log('test');
