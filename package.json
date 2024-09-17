@@ -19,8 +19,8 @@
 	},
 	"homepage": "https://github.com/btea/react#readme",
 	"devDependencies": {
-		"@commitlint/cli": "17.4.2",
-		"@commitlint/config-conventional": "17.4.2",
+		"@commitlint/cli": "19.5.0",
+		"@commitlint/config-conventional": "19.5.0",
 		"@types/react": "18.0.27",
 		"@typescript-eslint/eslint-plugin": "5.49.0",
 		"@typescript-eslint/parser": "5.49.0",
